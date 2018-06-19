@@ -1,10 +1,5 @@
 using DataFrames, Query
 
-# csvapply :: (f,String) -> [f(x)]
-# csvapply(tup) = @>> loadcsv(dir) map(x -> f(x));
-# @>> csvapply(zerobase) foreach(x -> CSV.write("$dir/$(@sprintf("%03d.csv",inc(1)))", x))
-# @>> csvapply(zerobaseColon) foreach(x -> CSV.write("$dir/$(@sprintf("%03d.csv",inc(1)))", x))
-
 ctr = 0
 # inc :: Int -> Int
 function inc(n)
