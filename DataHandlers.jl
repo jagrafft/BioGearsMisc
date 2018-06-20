@@ -6,6 +6,9 @@ using CSV, DataFrames, Gadfly, Lazy, Query
 # using LightXML
 
 ### Helper Functions ###
+# drawplots :: Lazy.LazyList -> Function -> ()
+drawplots(l::Lazy.LazyList, f::Function = plotjsdf) = @>> l map(x -> f(x)) foreach(x -> draw(PNG("$(x[1]).png", 9inch, 6inch), x[2]))
+
 # lscsv :: String -> Lazy.LazyList
 lscsv(p::String)::Lazy.LazyList = @lazy @>> readdir(p) filter(x -> contains(x, ".csv")) map(x -> "$p/$x")
 
@@ -18,9 +21,6 @@ loadcsv(dir::String)::Lazy.LazyList = @lazy @>> lscsv(dir) map(x -> @> x namefro
 
 # loadcsvd :: String -> Lazy.LazyList
 loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> @> "$dir/$x" loadcsv) flatten
-
-# drawplots :: Lazy.LazyList -> Function -> ()
-drawplots(l::Lazy.LazyList, f::Function = plotdf) = @>> l map(x -> f(x)) foreach(x -> draw(PNG("$(x[1]).png", 9inch, 6inch), x[2]))
 
 # namefrompath :: String -> Lazy.LazyList
 namefrompath(p::String)::Lazy.LazyList = @lazy @> p split("/") reverse take(2)
@@ -48,8 +48,8 @@ function lt90sp(df::DataFrame)::DataFrame
 end
 
 # TODO refactor (improve genericism)
-# hlplot :: Tuple{String, DataFrame} -> Tuple{String, Gadfly.Plot}
-function plotdf(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
+# plotjsdf :: Tuple{String, DataFrame} -> Tuple{String, Gadfly.Plot}
+function plotjsdf(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
     df = @> t[2] scalesp
     lt = @> df lt90sp
     tuple(
@@ -66,23 +66,3 @@ function plotdf(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
         )
     )
 end
-
-# DEPRECATED
-# TODO refactor (improve genericism)
-# bgplot :: Tuple{String, DataFrame} -> Tuple{String, Gadfly.Plot}
-# function plotdf(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
-#     df = @> t[2] scalesp
-#     tuple(
-#         t[1],
-#         plot(df,
-#             x=:Ts,
-#             y=Col.value(:MAP, :HR, :SpO2),
-#             color=Col.index(:MAP, :HR, :SpO2),
-#             Geom.line,
-#             Guide.xlabel("Time (seconds)"),
-#             Guide.ylabel(""),
-#             Guide.title("$(t[1])"),
-#             Guide.colorkey(title = "Legend", labels = ["MAP", "HR", "SpO2"])
-#         )
-#     )
-# end
