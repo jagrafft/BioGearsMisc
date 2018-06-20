@@ -20,9 +20,10 @@ loadcsv(dir::String)::Lazy.LazyList = @lazy @>> lscsv(dir) map(x -> @> x namefro
 loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> @> "$dir/$x" loadcsv) flatten
 
 # drawplots :: Lazy.LazyList -> Function -> ()
-drawplots(l::Lazy.LazyList, f::Function) = @>> l map(x -> f(x)) foreach(x -> draw(PNG("$(x[1]).png", 9inch, 6inch), x[2]))
+drawplots(l::Lazy.LazyList, f::Function = plotdf) = @>> l map(x -> f(x)) foreach(x -> draw(PNG("$(x[1]).png", 9inch, 6inch), x[2]))
 
-namefrompath(n::String)::Lazy.LazyList = @lazy @> n split("/") reverse take(2)
+# namefrompath :: String -> Lazy.LazyList
+namefrompath(p::String)::Lazy.LazyList = @lazy @> p split("/") reverse take(2)
 
 ### Generate BioGears XML File ###
 
@@ -37,7 +38,7 @@ function scalesp(df::DataFrame)::DataFrame
 end
 
 # TODO refactor (improve genericism)
-# splt90 :: DataFrame -> DataFrame
+# lt90sp :: DataFrame -> DataFrame
 function lt90sp(df::DataFrame)::DataFrame
     @from i in df begin
         @where i.SpO2 < 90
@@ -47,28 +48,10 @@ function lt90sp(df::DataFrame)::DataFrame
 end
 
 # TODO refactor (improve genericism)
-# bgplot :: Tuple{String, DataFrame} -> Tuple{String, Gadfly.Plot}
+# hlplot :: Tuple{String, DataFrame} -> Tuple{String, Gadfly.Plot}
 function plotdf(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
     df = @> t[2] scalesp
-    tuple(
-        t[1],
-        plot(df,
-            x=:Ts,
-            y=Col.value(:SpO2, :MAP, :HR),
-            color=Col.index(:SpO2, :MAP, :HR),
-            Geom.line,
-            Guide.xlabel("Time (seconds)"),
-            Guide.ylabel(""),
-            Guide.title("$(t[1])")
-        )
-    )
-end
-
-# TODO refactor (improve genericism)
-# hlplot :: Tuple{String, DataFrame} -> Tuple{String, Gadfly.Plot}
-function plotsp(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
-    df = @> t[2] scalesp
-    lt = @> df splt90
+    lt = @> df lt90sp
     tuple(
         t[1],
         plot(
@@ -83,3 +66,23 @@ function plotsp(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
         )
     )
 end
+
+# DEPRECATED
+# TODO refactor (improve genericism)
+# bgplot :: Tuple{String, DataFrame} -> Tuple{String, Gadfly.Plot}
+# function plotdf(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
+#     df = @> t[2] scalesp
+#     tuple(
+#         t[1],
+#         plot(df,
+#             x=:Ts,
+#             y=Col.value(:MAP, :HR, :SpO2),
+#             color=Col.index(:MAP, :HR, :SpO2),
+#             Geom.line,
+#             Guide.xlabel("Time (seconds)"),
+#             Guide.ylabel(""),
+#             Guide.title("$(t[1])"),
+#             Guide.colorkey(title = "Legend", labels = ["MAP", "HR", "SpO2"])
+#         )
+#     )
+# end
