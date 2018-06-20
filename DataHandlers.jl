@@ -6,21 +6,23 @@ using CSV, DataFrames, Gadfly, Lazy, Query
 # using LightXML
 
 ### Helper Functions ###
-# loadcsv :: String -> Lazy.LazyList{(String, DataFrame)}
-loadcsv(dir::String)::Lazy.LazyList = @lazy @>> lscsv(dir) map(x -> (convert(String, split(x, "/")[end]), CSV.read(x))) reduce(vcat,[])
-
-# loadcsvd :: String -> Lazy.LazyList{(String, DataFrame)}
-loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> lscsv("$dir/$x")) map(x -> map(y -> (convert(String, "$(split(y, "/")[end-1])-$(split(y, "/")[end])"), CSV.read(y)), x)) reduce(*)
-
-# lscsv :: String -> Lazy.LazyList{String}
+# lscsv :: String -> Lazy.LazyList
 lscsv(p::String)::Lazy.LazyList = @lazy @>> readdir(p) filter(x -> contains(x, ".csv")) map(x -> "$p/$x")
 
+# lsdir :: String -> Lazy.LazyList
 # TODO refactor: requires "pure" directory of directories (`isdir(dir)` not consistent--may be linux-osx crossover)
-# lsdir :: String -> Lazy.LazyList{String}
 lsdir(p::String)::Lazy.LazyList = @lazy @>> readdir(p) filter(x -> first(x) !== '.')
+
+# loadcsv :: String -> Lazy.LazyList
+loadcsv(dir::String)::Lazy.LazyList = @lazy @>> lscsv(dir) map(x -> @> x namefrompath reverse join("-") tuple(CSV.read(x))) flatten
+
+# loadcsvd :: String -> Lazy.LazyList
+loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> @> "$dir/$x" loadcsv) flatten
 
 # drawplots :: Lazy.LazyList -> Function -> ()
 drawplots(l::Lazy.LazyList, f::Function) = @>> l map(x -> f(x)) foreach(x -> draw(PNG("$(x[1]).png", 9inch, 6inch), x[2]))
+
+namefrompath(n::String)::Lazy.LazyList = @lazy @> n split("/") reverse take(2)
 
 ### Generate BioGears XML File ###
 
@@ -45,10 +47,10 @@ function lt90sp(df::DataFrame)::DataFrame
 end
 
 # TODO refactor (improve genericism)
-# bgplot :: (String, DataFrame) -> (String, Gadfly.Plot)
+# bgplot :: Tuple{String, DataFrame} -> Tuple{String, Gadfly.Plot}
 function plotdf(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
     df = @> t[2] scalesp
-    (
+    tuple(
         t[1],
         plot(df,
             x=:Ts,
@@ -63,11 +65,11 @@ function plotdf(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
 end
 
 # TODO refactor (improve genericism)
-# hlplot :: (String, DataFrame) -> (String, Gadfly.Plot)
+# hlplot :: Tuple{String, DataFrame} -> Tuple{String, Gadfly.Plot}
 function plotsp(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
     df = @> t[2] scalesp
     lt = @> df splt90
-    (
+    tuple(
         t[1],
         plot(
             layer(df, x=:Ts, y=:MAP, Geom.line, Theme(default_color=colorant"orange")),
