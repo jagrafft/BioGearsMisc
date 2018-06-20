@@ -17,13 +17,16 @@ lscsv(p::String)::Lazy.LazyList = @lazy @>> readdir(p) filter(x -> contains(x, "
 lsdir(p::String)::Lazy.LazyList = @lazy @>> readdir(p) filter(x -> first(x) !== '.')
 
 # loadcsv :: String -> Lazy.LazyList
-loadcsv(dir::String)::Lazy.LazyList = @lazy @>> lscsv(dir) map(x -> @> x namefrompath reverse join("-") tuple(CSV.read(x))) flatten
+loadcsv(dir::String)::Lazy.LazyList = @lazy @>> lscsv(dir) map(x -> @> x namefrompath tuple(CSV.read(x))) flatten
 
 # loadcsvd :: String -> Lazy.LazyList
 loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> @> "$dir/$x" loadcsv) flatten
 
-# namefrompath :: String -> Lazy.LazyList
-namefrompath(p::String)::Lazy.LazyList = @lazy @> p split("/") reverse take(2)
+# namefrompath :: String -> String
+namefrompath(p::String)::String = @> p splitpath takelast(2) join("-")
+
+# splitpath :: String -> Lazy.LazyList
+splitpath(p::String)::Lazy.LazyList = @lazy @> p split("/")
 
 ### Generate BioGears XML File ###
 
