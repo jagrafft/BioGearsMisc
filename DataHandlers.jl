@@ -2,8 +2,6 @@
 # Functions which handle DataFrames are specific to a single project
 
 using CSV, DataFrames, Gadfly, Lazy, Query
-# using DataStructures: Trie
-# using LightXML
 
 ### Helper Functions ###
 # drawplots :: Lazy.LazyList -> Function -> ()
@@ -27,8 +25,6 @@ namefrompath(p::String)::String = @> p splitpath takelast(2) join("-")
 
 # splitpath :: String -> Lazy.LazyList
 splitpath(p::String)::Lazy.LazyList = @lazy @> p split("/")
-
-### Generate BioGears XML File ###
 
 ### Visualize John Stuart RSI BioGears Data Sets ###
 # TODO refactor (improve genericism)
