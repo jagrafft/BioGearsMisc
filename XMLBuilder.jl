@@ -1,13 +1,13 @@
 # using Graft
-# using Lazy, LightXML
+using Lazy, LightXML
 
 mutable struct BGScenario
     document::LightXML.XMLDocument
     root::LightXML.XMLElement               # Scenario
-    init::Array{LightXML.XMLElement, 1}   # InitialParameters || EngineStateFile
     name::LightXML.XMLElement
     description::LightXML.XMLElement
-    dataRequests::Array{LightXML.XMLElement, 1}
+    init::LightXML.XMLElement               # InitialParameters || EngineStateFile
+    dataRequests::LightXML.XMLElement
     actions::Array{LightXML.XMLElement, 1}
     BGScenario(r) = new(XMLDocument(), r)
 end
@@ -18,55 +18,73 @@ data_requests = [
         ["xsi:type" => "PhysiologyDataRequestData", "Name" => "OxygenSaturation"]
     ]
 
-function newbgs()
-    scenario_attr = [
+function NewBGS()
+    attr = [
         "xmlns" => "uri:/mil/tatrc/physiology/datamodel",
         "xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance",
-        "xsdVersion" => "v16.12",
+        # "xsdVersion" => "v16.12",
         "contentVersion" => "BioGears_6.0.1-beta",
         "xsi:schemaLocation" => ""
     ]
 
-    sc = @> "Scenario" ne
-    @> sc set_attributes(scenario_attr)
-    BGScenario(sc)
+    s = @> "Scenario" new_element
+    @> s set_attributes(attr)
+    @> s BGScenario
 end
 
-ne(e::String) = @> e new_element
+function ExportBGS(s::BGScenario)
+    x = s.document
+    @> x set_root(s.root)
+    @> s.root add_child(s.name)
+    @> s.root add_child(s.description)
+    @> s.root add_child(s.init)
+    @> s.root add_child(s.dataRequests)
+    @>> s.actions foreach(a -> @> s.root add_child(a))
+    save_file(x, "BG_Scenario_Builder_$(Dates.now()).xml")
+end
+
+function action(t::String)
+    a = new_element("Action")
+    @> a set_attribute("xsi:type", t)
+    a
+end
+
+chldattr(r::LightXML.XMLElement, c::String, a) = @> r new_child(c) set_attributes(a)
+
 chldtxt(r::LightXML.XMLElement, c::String, t::String) = @> r new_child(c) add_text(t)
 
-x = XMLDocument()
+bgs = NewBGS()
 
-sc = @> "Scenario" ne
-@> sc set_attributes(scenario_attr)
-@> x set_root(sc)
+name = @> "Name" new_element
+@> name add_text("John Stuart")
+bgs.name = name
 
-@> sc chldtxt("Name", "John Stuart")
-@> sc chldtxt("Description", "John Stuart RSI GraphBuilder.jl test file")
+desc = @> "Description" new_element
+@> desc add_text("John Stuart RSI GraphBuilder.jl test file")
+bgs.description = desc
 
-ip = @> "InitialParameters" ne
+ip = @> "InitialParameters" new_element
 @> ip chldtxt("PatientFile", "JohnStuart.xml")
-@> sc add_child(ip)
+bgs.init = ip
 
-drqs = @> "DataRequests" ne
-@> drqs set_attribute("Filename", "../JohnStuartRSI-072016/data/orig/001.csv")
-
-drq = @>> data_requests map(x -> (x, ne("DataRequest")))
+drqs = @> "DataRequests" new_element
+@> drqs set_attribute("Filename", "w00t.csv")
+drq = @>> data_requests map(x -> (x, new_element("DataRequest")))
 @>> drq foreach(x -> set_attributes(x[2], x[1]))
 @>> drq foreach(x -> add_child(drqs, x[2]))
+bgs.dataRequests = drqs
 
-@> sc add_child(drqs)
+a1 = action("AdvanceTimeData")
+@> a1 chldtxt("Comment", "w00t! w00t! w00t! w00t! w00t! w00t! w00t! w00t! w00t!")
+@> a1 chldattr("Time", ["value" => "99", "unit" => "s"])
 
-act = @> "Action" ne @> set_attribute("xsi:type", "AdvanceTimeData")
-@> act set_attribute("xsi:type", "AdvanceTimeData")
+a2 = action("SubstanceBolusData")
+@> a2 set_attribute("AdminRoute", "Intravenous")
+@> a2 chldtxt("Substance", "Rocuronium")
+@> a2 chldattr("Concentration", ["value" => "0.1", "unit" => "mg/mL"])
+@> a2 chldattr("Dose", ["value" => "70.0", "unit" => "mL"])
 
-c = @> "Comment" ne
-@> c add_text("w00t! w00t! w00t! w00t! w00t! w00t! w00t! w00t! w00t!")
-add_child(act, c)
+a3 = action("AdvanceTimeData")
+@> a3 chldattr("Time", ["value" => "69", "unit" => "s"])
 
-t = @> "Time" ne
-@> t set_attributes(["value" => "99", "unit" => "s"])
-add_child(act, t)
-add_child(sc, act)
-
-save_file(x, "BioGears_Scenario_GraphBuilder_$(Dates.now()).xml")
+bgs.actions = [a1, a2, a3]
