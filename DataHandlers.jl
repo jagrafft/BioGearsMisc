@@ -4,11 +4,16 @@ using CSV, DataFrames
 "Load `*.csv` in `p` into `DataFrame`s."
 ldc(p::String)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = p |> lsc .|> x -> (name=namefromend(splitp(x)), df=CSV.read(x))
 
-""
-# ldcd()
+# loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> @> "$dir/$x" loadcsv) flatten
+# use `walkdir`
+# "List all `*.csv` in tree beneath `p`."
+# ldcd(p::String)::Array{String} = 
 
 "List `*.csv` in `p`."
-lsc(p::String)::Array{String} = p |> rjp |> x -> filter(y -> occursin(r".csv", y), x)
+lsc(p::String)::Array{String} = p |> rjp |> lsc
+
+"List `*.csv` in `a`."
+lsc(a::Array{String})::Array{String} = a |> x -> filter(y -> occursin(r".csv", y), x)
 
 "List directories in `p`."
 lsd(p::String)::Array{String} = p |> rjp |> x -> filter(isdir, x)
@@ -33,13 +38,9 @@ zerobase(a::Array{String})::Array{AbstractFloat} = a .|> x -> mmssToFloat(x) - m
 
 ##### REFACTOR #####
 # "`drawplots :: Lazy.LazyList -> Function -> ()`"
-""
 drawplots(l::Lazy.LazyList, f::Function = plotjsdf) = @>> l map(x -> f(x)) foreach(x -> draw(PNG("$(x[1]).png", 9inch, 6inch), x[2]))
 
-"Load all `*.csv` in ?...?, return as `Lazy.List{Tuple(:name, :df)}`."
-loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> @> "$dir/$x" loadcsv) flatten
-
-##### TO BE DEPRECATED #####
+##### TO BE DEPRECATED THEN RECREATED #####
 "scalesp :: DataFrame -> DataFrame"
 function scalesp(df::DataFrame)::DataFrame
     @from i in df begin
