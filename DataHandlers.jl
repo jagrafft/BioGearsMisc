@@ -1,7 +1,29 @@
-# using CSV, Gadfly, Lazy
+using CSV, DataFrames
+# using Gadfly
+
+"Load `*.csv` in `p` into `DataFrame`s."
+ldc(p::String)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = p |> lsc .|> x -> (name=namefromend(splitp(x)), df=CSV.read(x))
+
+""
+# ldcd()
+
+"List `*.csv` in `p`."
+lsc(p::String)::Array{String} = p |> rjp |> x -> filter(y -> occursin(r".csv", y), x)
+
+"List directories in `p`."
+lsd(p::String)::Array{String} = p |> rjp |> x -> filter(isdir, x)
 
 "Convert `mm:ss` to `AbstractFloat` of seconds."
 mmssToFloat(v::String)::AbstractFloat = split(v, ":") |> x -> [parse(Int, y) for y in x] |> x -> (60*x[1] + x[2]) |> x -> float(x)
+
+"Create name from last two values in an array."
+namefromend(a::Array)::String = "$(a[end-1])-$(a[end])"
+
+"Reads `p`, joins with file/dir name."
+rjp(p::String)::Array{String} = p |> readdir .|> x -> joinpath(p, x)
+
+"Split `p` by `/`."
+splitp(p::String)::Array{String} = p |> x -> split(x, "/")
 
 "Rebase `a` such that `n = 0; a[n+1] = a[n+1] - a[1]`."
 zerobase(a::Union{Array{<:AbstractFloat}, Array{<:Integer}})::Array{<:AbstractFloat} = a .|> x -> (x - a[1]) |> x -> float(x)
@@ -14,28 +36,8 @@ zerobase(a::Array{String})::Array{AbstractFloat} = a .|> x -> mmssToFloat(x) - m
 ""
 drawplots(l::Lazy.LazyList, f::Function = plotjsdf) = @>> l map(x -> f(x)) foreach(x -> draw(PNG("$(x[1]).png", 9inch, 6inch), x[2]))
 
-# "`lscsv :: String -> Lazy.LazyList`"
-""
-lscsv(p::String)::Lazy.LazyList = @lazy @>> readdir(p) filter(x -> contains(x, ".csv")) map(x -> "$p/$x")
-
-# "`lsdir :: String -> Lazy.LazyList`"
-""
-# TODO refactor: requires "pure" directory of directories (`isdir(dir)` not consistent--may be linux-osx crossover)
-lsdir(p::String)::Lazy.LazyList = @lazy @>> readdir(p) filter(x -> first(x) !== '.')
-
-"Load all `*.csv` in a single directory via `CSV.read`, return as `Lazy.List{Tuple(:name, :df)}`."
-loadcsv(dir::String)::Lazy.LazyList = @lazy @>> lscsv(dir) map(x -> tuple(name=namefrompath(x), df=CSV.read(x))) flatten
-
 "Load all `*.csv` in ?...?, return as `Lazy.List{Tuple(:name, :df)}`."
 loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> @> "$dir/$x" loadcsv) flatten
-
-# "`namefrompath :: String -> String`"
-""
-namefrompath(p::String)::String = @> p splitpath takelast(2) join("-")
-
-# "`splitpath :: String -> Lazy.LazyList`"
-""
-splitpath(p::String)::Lazy.LazyList = @lazy @> p split("/")
 
 ##### TO BE DEPRECATED #####
 "scalesp :: DataFrame -> DataFrame"
