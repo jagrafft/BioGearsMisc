@@ -1,22 +1,47 @@
 using CSV, DataFrames
 # using Gadfly
 
+# TODO Figure Julia Documentation and reformat
+"""
+Concatenate array of `DataFrame`s, adding index column `i` to each.
+
+`NOTE` Implicit assumption is made that all `DataFrame`s in array have identical column names.
+"""
+concati(d::Array{DataFrame})::DataFrame = (
+        _df = DataFrame(i=[]);
+        foreach(x -> _df[x] = [], d |> first |> names);
+        reduce((a, c) -> (
+            i = a[:i] + 1;
+            ds = destructure(c);
+            # df = XXX(ds);
+            # create new function #
+            df = DataFrame(i=constant(i, first(ds)[2] |> length));
+            foreach(x -> df[x[1]]=x[2], ds);
+            ##
+
+            (i=i, df=append!(a[:df], df))
+        ), d; init=(i=0, df=_df))
+    )[:df]
+
+"Create `n`-length array of `c`."
+constant(c, n::Integer)::Array = repeat([c]; outer=[n])
+
+"Create array of `(colname, [col])` from `DataFrame`."
+destructure(d::DataFrame)::Array{Tuple{Symbol, AbstractArray}} = map(identity, zip(names(d), DataFrames.columns(d)))
+
 "Load `*.csv` in `p` into `DataFrame`s."
-ldc(p::String)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = p |> lsc .|> x -> (name=namefromend(splitp(x)), df=CSV.read(x))
+ldc(p::String)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = p |> lsc .|> x -> (name=(x |> splitp |> namefromend), df=CSV.read(x))
 
 # loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> @> "$dir/$x" loadcsv) flatten
 # use `walkdir`
 # "List all `*.csv` in tree beneath `p`."
 # ldcd(p::String)::Array{String} = 
 
-# label and append
-# (d::Array{DataFrame}, df::DataFrame)::DataFrame = reduce((a, c) -> append!(a, c), d; init=df))
+"List `*.csv` in `a`."
+lsc(a::Array{String})::Array{String} = filter(y -> occursin(r".csv", y), a)
 
 "List `*.csv` in `p`."
 lsc(p::String)::Array{String} = p |> readjp |> lsc
-Certainly reasonable to assume I could have looked it up and quickly given a competent answer, but I am not going to assume credit for that.
-"List `*.csv` in `a`."
-lsc(a::Array{String})::Array{String} = a |> x -> filter(y -> occursin(r".csv", y), x)
 
 "List directories in `p`."
 lsd(p::String)::Array{String} = p |> readjp |> x -> filter(isdir, x)
@@ -27,11 +52,11 @@ mmssToFloat(v::Union{Missing, String})::Union{AbstractFloat, Missing} = v |> typ
 "Create name from last two values in an array."
 namefromend(a::Array)::String = "$(a[end-1])-$(a[end])"
 
-"Execute `zerobase` on `DataFrame` column."
-rebasez(nt::NamedTuple{(:name, :df), Tuple{String, DataFrame}}, k::Symbol = :t)::NamedTuple{(:name, :df), Tuple{String, DataFrame}} = (nt[:df][k] = nt[:df][k] |> zerobase; nt)
-
 "Execute `zerobase` on array of `DataFrame`s."
 rebasez(dfs::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}}, k::Symbol = :t)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = dfs .|> x -> rebasez(x, k)
+
+"Execute `zerobase` on `DataFrame` column."
+rebasez(nt::NamedTuple{(:name, :df), Tuple{String, DataFrame}}, k::Symbol = :t)::NamedTuple{(:name, :df), Tuple{String, DataFrame}} = (nt[:df][k] = nt[:df][k] |> zerobase; nt)
 
 "Reads `p`, joins with file/dir name."
 readjp(p::String)::Array{String} = p |> readdir .|> x -> joinpath(p, x)
@@ -40,7 +65,7 @@ readjp(p::String)::Array{String} = p |> readdir .|> x -> joinpath(p, x)
 splitp(p::String)::Array{String} = p |> x -> split(x, "/")
 
 "Rebase `a` such that `n = 0; a[n+1] = a[n+1] - a[1]`."
-zerobase(a::Union{Array{<:AbstractFloat}, Array{<:Integer}, Array{Union{<:AbstractFloat, Missing}}, Array{Union{<:Integer, Missing}}})::Array{Union{AbstractFloat, Missing}} = a .|> x -> (x - a[1]) |> float
+zerobase(a::Union{Array{<:AbstractFloat}, Array{<:Integer}, Array{Union{<:AbstractFloat, Missing}}, Array{Union{<:Integer, Missing}}})::Array{Union{AbstractFloat, Missing}} = a .|> x -> (x - first(a)) |> float
 
 "Rebase `a` such that `n = 0; a[n+1] = a[n+1] - a[1]`. Values in seconds."
 zerobase(a::Union{Array{String}, Array{Union{Missing, String}}})::Array{Union{AbstractFloat, Missing}} = a .|> x -> mmssToFloat(x) - mmssToFloat(a[1])
