@@ -2,9 +2,12 @@ using CSV, DataFrames
 # using Gadfly
 
 # TODO Figure Julia Documentation and reformat
+
+# TODO Make functional
 "Creates copy of `DataFrame` with empty columns."
 blank(df::DataFrame)::DataFrame = (_df=DataFrame(); foreach(x -> _df[x]=[], names(df)); _df)
 
+# TODO Make functional
 "Creates copy of `DataFrame` with empty columns plus an index column."
 blanki(df::DataFrame)::DataFrame = (_df=DataFrame(i=[]); foreach(x -> _df[x]=[], names(df)); _df)
 
@@ -25,6 +28,7 @@ constant(c, n::Integer)::Array = repeat([c]; outer=[n])
 "Create array of `(colname, [col])` from `DataFrame`."
 destructure(d::DataFrame)::Array{Tuple{Symbol, AbstractArray}} = map(identity, zip(names(d), DataFrames.columns(d)))
 
+# TODO Make functional
 ""
 indexdf(df::DataFrame; f::Function=constant, i::Integer=0) = (_ds=destructure(df); _df=DataFrame(i=f(i, first(_ds)[2] |> length)); foreach(x -> _df[x[1]]=x[2], _ds); _df)
 
@@ -68,46 +72,3 @@ zerobase(a::Union{Array{<:AbstractFloat}, Array{<:Integer}, Array{Union{<:Abstra
 
 "Rebase `a` such that `n = 0; a[n+1] = a[n+1] - a[1]`. Values in seconds."
 zerobase(a::Union{Array{String}, Array{Union{Missing, String}}})::Array{Union{AbstractFloat, Missing}} = a .|> x -> mmssToFloat(x) - mmssToFloat(a[1])
-
-##### REFACTOR #####
-# "`drawplots :: Lazy.LazyList -> Function -> ()`"
-# drawplots(l::Lazy.LazyList, f::Function = plotjsdf) = @>> l map(x -> f(x)) foreach(x -> draw(PNG("$(x[1]).png", 9inch, 6inch), x[2]))
-
-##### TO BE DEPRECATED THEN RECREATED #####
-# "scalesp :: DataFrame -> DataFrame"
-# function scalesp(df::DataFrame)::DataFrame
-#     @from i in df begin
-#         @select {Ts=i.s, SpO2=get(i.spO2)*100, MAP=i.map, HR=i.hr}
-#         @collect DataFrame
-#     end
-# end
-
-# TODO refactor (improve genericism)
-# "lt90sp :: DataFrame -> DataFrame"
-# function lt90sp(df::DataFrame)::DataFrame
-#     @from i in df begin
-#         @where i.SpO2 < 90
-#         @select {i.Ts, i.SpO2}
-#         @collect DataFrame
-#     end
-# end
-
-# TODO refactor (improve genericism)
-# "plotjsdf :: Tuple{String, DataFrame} -> Tuple{String, Gadfly.Plot}"
-# function plotjsdf(t::Tuple{String, DataFrame})::Tuple{String, Gadfly.Plot}
-#     df = @> t[2] scalesp
-#     lt = @> df lt90sp
-#     tuple(
-#         t[1],
-#         plot(
-#             layer(df, x=:Ts, y=:MAP, Geom.line, Theme(default_color=colorant"orange")),
-#             layer(df, x=:Ts, y=:HR, Geom.line, Theme(default_color=colorant"green")),
-#             layer(lt, x=:Ts, y=:SpO2, Geom.line, Theme(default_color=colorant"red")),
-#             layer(df, x=:Ts, y=:SpO2, Geom.line, Theme(default_color=colorant"deepskyblue")),
-#             Guide.xlabel("Time (seconds)"),
-#             Guide.ylabel(""),
-#             Guide.title("$(t[1])"),
-#             Guide.manual_color_key("Legend", ["MAP", "HR", "SpO2 ≥ 90%"], ["orange", "green", "deepskyblue"])
-#         )
-#     )
-# end
