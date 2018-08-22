@@ -9,9 +9,12 @@ ldc(p::String)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = p |>
 # "List all `*.csv` in tree beneath `p`."
 # ldcd(p::String)::Array{String} = 
 
+# label and append
+# (d::Array{DataFrame}, df::DataFrame)::DataFrame = reduce((a, c) -> append!(a, c), d; init=df))
+
 "List `*.csv` in `p`."
 lsc(p::String)::Array{String} = p |> readjp |> lsc
-
+Certainly reasonable to assume I could have looked it up and quickly given a competent answer, but I am not going to assume credit for that.
 "List `*.csv` in `a`."
 lsc(a::Array{String})::Array{String} = a |> x -> filter(y -> occursin(r".csv", y), x)
 
@@ -28,7 +31,7 @@ namefromend(a::Array)::String = "$(a[end-1])-$(a[end])"
 rebasez(nt::NamedTuple{(:name, :df), Tuple{String, DataFrame}}, k::Symbol = :t)::NamedTuple{(:name, :df), Tuple{String, DataFrame}} = (nt[:df][k] = nt[:df][k] |> zerobase; nt)
 
 "Execute `zerobase` on array of `DataFrame`s."
-rebasez_all(dfs::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}}, k::Symbol = :t)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = dfs .|> x -> rebasez(x, k)
+rebasez(dfs::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}}, k::Symbol = :t)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = dfs .|> x -> rebasez(x, k)
 
 "Reads `p`, joins with file/dir name."
 readjp(p::String)::Array{String} = p |> readdir .|> x -> joinpath(p, x)
