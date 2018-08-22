@@ -2,25 +2,21 @@ using CSV, DataFrames
 # using Gadfly
 
 # TODO Figure Julia Documentation and reformat
+"Creates copy of `DataFrame` with empty columns."
+blank(df::DataFrame)::DataFrame = (_df=DataFrame(); foreach(x -> _df[x]=[], names(df)); _df)
+
+"Creates copy of `DataFrame` with empty columns plus an index column."
+blanki(df::DataFrame)::DataFrame = (_df=DataFrame(i=[]); foreach(x -> _df[x]=[], names(df)); _df)
+
 """
 Concatenate array of `DataFrame`s, adding index column `i` to each.
 
 `NOTE` Implicit assumption is made that all `DataFrame`s in array have identical column names.
 """
 concati(d::Array{DataFrame})::DataFrame = (
-        _df = DataFrame(i=[]);
-        foreach(x -> _df[x] = [], d |> first |> names);
-        reduce((a, c) -> (
-            i = a[:i] + 1;
-            ds = destructure(c);
-            # df = XXX(ds);
-            # create new function #
-            df = DataFrame(i=constant(i, first(ds)[2] |> length));
-            foreach(x -> df[x[1]]=x[2], ds);
-            ##
-
-            (i=i, df=append!(a[:df], df))
-        ), d; init=(i=0, df=_df))
+        reduce((a, c) ->
+            (i=a[:i]+1, df=append!(a[:df], indexdf(c; i=a[:i]+1)))
+            ,d; init=(i=0, df=blanki(d |> first)))
     )[:df]
 
 "Create `n`-length array of `c`."
@@ -28,6 +24,9 @@ constant(c, n::Integer)::Array = repeat([c]; outer=[n])
 
 "Create array of `(colname, [col])` from `DataFrame`."
 destructure(d::DataFrame)::Array{Tuple{Symbol, AbstractArray}} = map(identity, zip(names(d), DataFrames.columns(d)))
+
+""
+indexdf(df::DataFrame; f::Function=constant, i::Integer=0) = (_ds=destructure(df); _df=DataFrame(i=f(i, first(_ds)[2] |> length)); foreach(x -> _df[x[1]]=x[2], _ds); _df)
 
 "Load `*.csv` in `p` into `DataFrame`s."
 ldc(p::String)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = p |> lsc .|> x -> (name=(x |> splitp |> namefromend), df=CSV.read(x))
