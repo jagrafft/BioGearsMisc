@@ -23,16 +23,18 @@ concati(d::Array{DataFrame})::DataFrame = (
     )[:df]
 
 "Create `n`-length array of `c`."
-constant(c, n::Integer)::Array = repeat([c]; outer=[n])
+constant(c, n::Integer) = repeat([c]; outer=n)
 
 "Create array of `(colname, [col])` from `DataFrame`."
+# !TS
 destructure(d::DataFrame)::Array{Tuple{Symbol, AbstractArray}} = map(identity, zip(names(d), DataFrames.columns(d)))
 
 # TODO Make functional
 ""
-indexdf(df::DataFrame; f::Function=constant, i::Integer=0) = (_ds=destructure(df); _df=DataFrame(i=f(i, first(_ds)[2] |> length)); foreach(x -> _df[x[1]]=x[2], _ds); _df)
+indexdf(df::DataFrame; f::Function=constant, i::Integer=0)::DataFrame = (_ds=destructure(df); _df=DataFrame(i=f(i, first(_ds)[2] |> length)); foreach(x -> _df[x[1]]=x[2], _ds); _df)
 
 "Load `*.csv` in `p` into `DataFrame`s."
+# !TS
 ldc(p::String)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = p |> lsc .|> x -> (name=(x |> splitp |> namefromend), df=CSV.read(x))
 
 # loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> @> "$dir/$x" loadcsv) flatten
@@ -56,10 +58,10 @@ mmssToFloat(v::Union{Missing, String})::Union{AbstractFloat, Missing} = v |> typ
 namefromend(a::Array)::String = "$(a[end-1])-$(a[end])"
 
 "Execute `zerobase` on array of `DataFrame`s."
-rebasez(dfs::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}}, k::Symbol = :t)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = dfs .|> x -> rebasez(x, k)
+rebasez(dfs::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}}; k::Symbol = :t)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = dfs .|> x -> rebasez(x, k)
 
 "Execute `zerobase` on `DataFrame` column."
-rebasez(nt::NamedTuple{(:name, :df), Tuple{String, DataFrame}}, k::Symbol = :t)::NamedTuple{(:name, :df), Tuple{String, DataFrame}} = (nt[:df][k] = nt[:df][k] |> zerobase; nt)
+rebasez(nt::NamedTuple{(:name, :df), Tuple{String, DataFrame}}; k::Symbol = :t)::NamedTuple{(:name, :df), Tuple{String, DataFrame}} = (nt[:df][k] = nt[:df][k] |> zerobase; nt)
 
 "Reads `p`, joins with file/dir name."
 readjp(p::String)::Array{String} = p |> readdir .|> x -> joinpath(p, x)
