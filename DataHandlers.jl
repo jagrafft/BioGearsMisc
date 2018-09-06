@@ -58,10 +58,10 @@ mmssToFloat(v::Union{Missing, String})::Union{AbstractFloat, Missing} = v |> typ
 namefromend(a::Array)::String = "$(a[end-1])-$(a[end])"
 
 "Execute `zerobase` on array of `DataFrame`s."
-rebasez(dfs::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}}; k::Symbol = :t)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = dfs .|> x -> rebasez(x, k)
+rebasez(dfs::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}}, k::Symbol = :t)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = dfs .|> x -> rebasez(x, k)
 
 "Execute `zerobase` on `DataFrame` column."
-rebasez(nt::NamedTuple{(:name, :df), Tuple{String, DataFrame}}; k::Symbol = :t)::NamedTuple{(:name, :df), Tuple{String, DataFrame}} = (nt[:df][k] = nt[:df][k] |> zerobase; nt)
+rebasez(nt::NamedTuple{(:name, :df), Tuple{String, DataFrame}}, k::Symbol = :t)::NamedTuple{(:name, :df), Tuple{String, DataFrame}} = (nt[:df][k] = nt[:df][k] |> zerobase; nt)
 
 "Reads `p`, joins with file/dir name."
 readjp(p::String)::Array{String} = p |> readdir .|> x -> joinpath(p, x)
