@@ -1,6 +1,5 @@
 using CSV, DataFrames
 # using Gadfly
-
 # TODO Figure Julia Documentation and reformat
 
 # TODO Make functional
@@ -25,16 +24,20 @@ concati(d::Array{DataFrame})::DataFrame = (
 "Create `n`-length array of `c`."
 constant(c, n::Integer) = repeat([c]; outer=n)
 
-"Create array of `(colname, [col])` from `DataFrame`."
-# !TS
-destructure(d::DataFrame)::Array{Tuple{Symbol, AbstractArray}} = map(identity, zip(names(d), DataFrames.columns(d)))
+"Count unique elements in a vector."
+countunique(a::Array{T, 1} where T)::Array{Tuple, 1} = map(x -> (x, count(y -> y == x, a)), unique(a))
+
+"Create Dictionary of `(colname => [col])` from `DataFrame`."
+destructure(df::DataFrame)::Array{Tuple{Symbol, AbstractArray}} = (a=[]; foreach(x -> push!(a, (x, df[x])), names(df)); a)
+# !Type stable
+# destructure(df::DataFrame)::Array{Tuple{Symbol, AbstractArray}} = map(x -> (x, df[x]), names(df))
 
 # TODO Make functional
 ""
 indexdf(df::DataFrame; f::Function=constant, i::Integer=0)::DataFrame = (_ds=destructure(df); _df=DataFrame(i=f(i, first(_ds)[2] |> length)); foreach(x -> _df[x[1]]=x[2], _ds); _df)
 
 "Load `*.csv` in `p` into `DataFrame`s."
-# !TS
+# !Type stable
 ldc(p::String)::Array{NamedTuple{(:name, :df), Tuple{String, DataFrame}}} = p |> lsc .|> x -> (name=(x |> splitp |> namefromend), df=CSV.read(x))
 
 # loadcsvd(dir::String)::Lazy.LazyList = @lazy @>> lsdir(dir) map(x -> @> "$dir/$x" loadcsv) flatten
