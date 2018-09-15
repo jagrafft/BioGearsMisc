@@ -72,6 +72,20 @@ readjp(p::String)::Array{String} = p |> readdir .|> x -> joinpath(p, x)
 "Split `p` by `/`."
 splitp(p::String)::Array{String} = p |> x -> split(x, "/")
 
+"Creates `Array{(index, time, key, vals[n])}` by identifying the index of each `key` in `a` then pulling the value at the corresponding index of `b`."
+# !Functional => Return value currently only valid for arrays whose length is an even number.
+function tuplesbykey(a::Symbol, b::Symbol, key::T where T, vals::Vector, df::DataFrame)::Array{Tuple}
+    z=[];
+    for (i,v) in enumerate(indexin(df[a], vals))
+       if typeof(v) != Nothing
+           if df[b][i] == key
+               push!(z, (df[:i][i], df[:t][i], df[a][i], df[b][i]))
+           end
+       end
+    end
+    z
+end
+
 "Rebase `a` such that `n = 0; a[n+1] = a[n+1] - a[1]`."
 zerobase(a::Union{Array{<:AbstractFloat}, Array{<:Integer}, Array{Union{<:AbstractFloat, Missing}}, Array{Union{<:Integer, Missing}}})::Array{Union{AbstractFloat, Missing}} = a .|> x -> (x - first(a)) |> float
 
