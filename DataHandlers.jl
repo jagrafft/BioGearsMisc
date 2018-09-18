@@ -76,13 +76,14 @@ splitp(p::String)::Array{String} = p |> x -> split(x, "/")
 # !Functional => Return value currently only valid for arrays whose length is an even number.
 function tuplesbykey(a::Symbol, b::Symbol, key::T where T, vals::Vector, df::DataFrame)::Array{Tuple}
     z=[];
-    for (i,v) in enumerate(indexin(df[a], vals))
-       if typeof(v) != Nothing
-           if df[b][i] == key
-               push!(z, (df[:i][i], df[:t][i], df[a][i], df[b][i]))
-           end
-       end
-    end
+    foreach(v -> 
+        if typeof(v) != Nothing
+            if df[b][v[1]] == key
+                push!(z, (df[:i][v[1]], df[:t][v[1]], df[a][v[1]], df[b][v[1]]))
+            end
+        end,
+        enumerate(indexin(df[a], vals))
+    )
     z
 end
 
