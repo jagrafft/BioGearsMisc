@@ -18,7 +18,7 @@ Concatenate array of `DataFrame`s, adding index column `i` to each.
 concati(d::Array{DataFrame})::DataFrame = (
         reduce((a, c) ->
             (i=a[:i]+1, df=append!(a[:df], indexdf(c; i=a[:i]+1)))
-            ,d; init=(i=0, df=blanki(d |> first)))
+            , d; init=(i=0, df=blanki(d |> first)))
     )[:df]
 
 "Create `n`-length array of `c`."
@@ -72,17 +72,18 @@ readjp(p::String)::Array{String} = p |> readdir .|> x -> joinpath(p, x)
 "Split `p` by `/`."
 splitp(p::String)::Array{String} = p |> x -> split(x, "/")
 
-"Creates `Array{(index, time, key, vals[n])}` by identifying the index of each `key` in `a` then pulling the value at the corresponding index of `b`."
-# !Functional => Return value currently only valid for arrays whose length is an even number.
-function tuplesbykey(a::Symbol, b::Symbol, key::T where T, vals::Vector, df::DataFrame)::Array{Tuple}
+"For each `key` found in `df[target]`, creates `NamedTuple` of values at index `i` in each column of `cols`."
+function tuplesbykey(target::Symbol, cols::Vector{Symbol}, keys::Array{T, 1} where T, df::DataFrame)::Vector{NamedTuple}
     z=[];
-    foreach(v -> 
-        if typeof(v) != Nothing
-            if df[b][v[1]] == key
-                push!(z, (df[:i][v[1]], df[:t][v[1]], df[a][v[1]], df[b][v[1]]))
-            end
+    foreach(v ->
+        if typeof(v[2]) != Nothing
+            nt = reduce((a,c) -> (push!(a[1], c[1]), push!(a[2], c[2])),
+                map(x -> (x, df[x][v[1]]), cols);
+                init=([],[])
+            )
+            push!(z, (index=v[1], target=keys[v[2]], vals=NamedTuple{tuple(nt[1]...)}(nt[2])))
         end,
-        enumerate(indexin(df[a], vals))
+        enumerate(indexin(df[target], keys))
     )
     z
 end
