@@ -2,6 +2,12 @@ using CSV, DataFrames
 # using Gadfly
 # TODO Figure Julia Documentation and reformat
 
+# Count unique
+(zip(df[:event], df[:code]) .|> x -> "$(x[1]):$(x[2])") |> x -> [(k, count(y -> y == k, x)) for k in unique(x)]
+
+# Count unique with percent representation
+(zip(df[:event], df[:code]) .|> x -> "$(x[1]):$(x[2])") |> x -> [(k, count(y -> y == k, x)) for k in unique(x)] |> x -> [(key=k[1], count=k[2], representation=k[2]/15) for k in x]
+
 # TODO Make functional
 "Creates copy of `DataFrame` with empty columns."
 blank(df::DataFrame)::DataFrame = (_df=DataFrame(); foreach(x -> _df[x]=[], names(df)); _df)
