@@ -1,5 +1,4 @@
 using CSV, DataFrames
-# using Gadfly
 # TODO Figure Julia Documentation and reformat
 
 # Count unique
@@ -79,7 +78,7 @@ readjp(p::String)::Array{String} = p |> readdir .|> x -> joinpath(p, x)
 splitp(p::String)::Array{String} = p |> x -> split(x, "/")
 
 "For each `key` found in `df[target]`, creates `NamedTuple` of values at index `i` in each column of `cols`."
-function tuplesbykey(target::Symbol, cols::Vector{Symbol}, keys::Array{T, 1} where T, df::DataFrame)::Vector{NamedTuple}
+function tuplesbykey(df::DataFrame, target::Symbol, cols::Vector{Symbol}, keys::Array{T, 1} where T)::Vector{NamedTuple}
     z=[];
     foreach(v ->
         if typeof(v[2]) != Nothing
