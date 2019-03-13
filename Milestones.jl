@@ -41,27 +41,45 @@ gi_feats_names = [String(x) for x in colnames(select(gi, Between(8,38)))]
 ob_feats_names = [String(x) for x in colnames(select(ob, Between(8,39)))]
 
 ## Histograms
+### Durations
+map(x -> filter(v -> v < x, select(gi, :minutes)), [8301, 1250, 201, 151, 101, 61, 46, 31]) .|> x -> Plots.savefig(Plots.histogram(x, legend=false, bins=:scott, title="GI Bleed, duration < $(maximum(x))min (N=$(length(x)))"), "GIBleed_lt$(maximum(x)).pdf")
+
+map(x -> filter(v -> v < x, select(ob, :minutes)), [8301, 1250, 201, 151, 101, 61, 46, 31]) .|> x -> Plots.savefig(Plots.histogram(x, legend=false, bins=:scott, title="Obstructed Bile Duct, duration < $(maximum(x))min (N=$(length(x)))"), "OBD_lt$(maximum(x)).pdf")
+
 ### GI
-png((@df gi StatsPlots.histogram(cols(8:16), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(gi_feats_names[1:9],1,9))), "GI_Bleed_1_hist.png")
-png((@df gi StatsPlots.histogram(cols(17:25), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(gi_feats_names[10:18],1,9))), "GI_Bleed_2_hist.png")
-png((@df gi StatsPlots.histogram(cols(26:34), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(gi_feats_names[19:27],1,9))), "GI_Bleed_3_hist.png")
-png((@df gi StatsPlots.histogram(cols(35:38), legend=false, titlefont=font(8), xticks=[1,2,3], layout=4, label="", bins=:scott, title=reshape(gi_feats_names[28:31],1,4))), "GI_Bleed_4_hist.png")
+Plots.savefig((@df gi StatsPlots.histogram(cols(8:16), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(gi_feats_names[1:9],1,9))), "GI_Bleed_1_hist.pdf")
+Plots.savefig((@df gi StatsPlots.histogram(cols(17:25), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(gi_feats_names[10:18],1,9))), "GI_Bleed_2_hist.pdf")
+Plots.savefig((@df gi StatsPlots.histogram(cols(26:34), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(gi_feats_names[19:27],1,9))), "GI_Bleed_3_hist.pdf")
+Plots.savefig((@df gi StatsPlots.histogram(cols(35:38), legend=false, titlefont=font(8), xticks=[1,2,3], layout=4, label="", bins=:scott, title=reshape(gi_feats_names[28:31],1,4))), "GI_Bleed_4_hist.pdf")
 
 ### OBD
-png((@df ob StatsPlots.histogram(cols(8:16), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(ob_feats_names[1:9],1,9))), "OBD_1_hist.png")
-png((@df ob StatsPlots.histogram(cols(17:25), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(ob_feats_names[10:18],1,9))), "OBD_2_hist.png")
-png((@df ob StatsPlots.histogram(cols(26:34), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(ob_feats_names[19:27],1,9))), "OBD_3_hist.png")
-png((@df ob StatsPlots.histogram(cols(35:39), legend=false, titlefont=font(8), xticks=[1,2,3], layout=5, label="", bins=:scott, title=reshape(ob_feats_names[28:32],1,5))), "OBD_4_hist.png")
+Plots.savefig((@df ob StatsPlots.histogram(cols(8:16), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(ob_feats_names[1:9],1,9))), "OBD_1_hist.pdf")
+Plots.savefig((@df ob StatsPlots.histogram(cols(17:25), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(ob_feats_names[10:18],1,9))), "OBD_2_hist.pdf")
+Plots.savefig((@df ob StatsPlots.histogram(cols(26:34), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", bins=:scott, title=reshape(ob_feats_names[19:27],1,9))), "OBD_3_hist.pdf")
+Plots.savefig((@df ob StatsPlots.histogram(cols(35:39), legend=false, titlefont=font(8), xticks=[1,2,3], layout=5, label="", bins=:scott, title=reshape(ob_feats_names[28:32],1,5))), "OBD_4_hist.pdf")
+
+## Scatter Plots
+### GI
+Plots.savefig((@df gi StatsPlots.scatter(cols(8:16), legend=false, titlefont=font(8), markersize=2, markerstrokewidth=0, layout=9, label="", title=reshape(gi_feats_names[1:9],1,9))), "GI_Bleed_1_scatter.pdf")
+Plots.savefig((@df gi StatsPlots.scatter(cols(17:25), legend=false, titlefont=font(8), markersize=2, markerstrokewidth=0, layout=9, label="", title=reshape(gi_feats_names[10:18],1,9))), "GI_Bleed_2_scatter.pdf")
+Plots.savefig((@df gi StatsPlots.scatter(cols(26:34), legend=false, titlefont=font(8), markersize=2, markerstrokewidth=0, layout=9, label="", title=reshape(gi_feats_names[19:27],1,9))), "GI_Bleed_3_scatter.pdf")
+Plots.savefig((@df gi StatsPlots.scatter(cols(35:38), legend=false, titlefont=font(8), markersize=2, markerstrokewidth=0, layout=4, label="", title=reshape(gi_feats_names[28:31],1,4))), "GI_Bleed_4_scatter.pdf")
+
+### OBD
+Plots.savefig((@df ob StatsPlots.scatter(cols(8:16), legend=false, titlefont=font(8), markersize=2, markerstrokewidth=0, layout=9, label="", bins=:scott, title=reshape(ob_feats_names[1:9],1,9))), "OBD_1_scatter.pdf")
+Plots.savefig((@df ob StatsPlots.scatter(cols(17:25), legend=false, titlefont=font(8), markersize=2, markerstrokewidth=0, layout=9, label="", bins=:scott, title=reshape(ob_feats_names[10:18],1,9))), "OBD_2_scatter.pdf")
+Plots.savefig((@df ob StatsPlots.scatter(cols(26:34), legend=false, titlefont=font(8), markersize=2, markerstrokewidth=0, layout=9, label="", bins=:scott, title=reshape(ob_feats_names[19:27],1,9))), "OBD_3_scatter.pdf")
+Plots.savefig((@df ob StatsPlots.scatter(cols(35:39), legend=false, titlefont=font(8), markersize=2, markerstrokewidth=0, layout=5, label="", bins=:scott, title=reshape(ob_feats_names[28:32],1,5))), "OBD_4_scatter.pdf")
 
 ## Density Plots
 ### GI
-# png((@df gi StatsPlots.density(cols(8:16), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(gi_feats_names[1:9],1,9))), "GI_Bleed_1_den.png")
-# png((@df gi StatsPlots.density(cols(17:25), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(gi_feats_names[10:18],1,9))), "GI_Bleed_2_den.png")
-# png((@df gi StatsPlots.density(cols(26:34), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(gi_feats_names[19:27],1,9))), "GI_Bleed_3_den.png")
-# png((@df gi StatsPlots.density(cols(35:38), legend=false, titlefont=font(8), xticks=[1,2,3], layout=4, label="", title=reshape(gi_feats_names[28:31],1,4))), "GI_Bleed_4_den.png")
+# Plots.savefig((@df gi StatsPlots.density(cols(8:16), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(gi_feats_names[1:9],1,9))), "GI_Bleed_1_den.pdf")
+# Plots.savefig((@df gi StatsPlots.density(cols(17:25), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(gi_feats_names[10:18],1,9))), "GI_Bleed_2_den.pdf")
+# Plots.savefig((@df gi StatsPlots.density(cols(26:34), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(gi_feats_names[19:27],1,9))), "GI_Bleed_3_den.pdf")
+# Plots.savefig((@df gi StatsPlots.density(cols(35:38), legend=false, titlefont=font(8), xticks=[1,2,3], layout=4, label="", title=reshape(gi_feats_names[28:31],1,4))), "GI_Bleed_4_den.pdf")
 
 ### OBD
-# png((@df ob StatsPlots.density(cols(8:16), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(ob_feats_names[1:9],1,9))), "OBD_1_den.png")
-# png((@df ob StatsPlots.density(cols(17:25), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(ob_feats_names[10:18],1,9))), "OBD_2_den.png")
-# png((@df ob StatsPlots.density(cols(26:34), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(ob_feats_names[19:27],1,9))), "OBD_3_den.png")
-# png((@df ob StatsPlots.density(cols(35:39), legend=false, titlefont=font(8), xticks=[1,2,3], layout=5, label="", title=reshape(ob_feats_names[28:32],1,5))), "OBD_4_den.png")
+# Plots.savefig((@df ob StatsPlots.density(cols(8:16), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(ob_feats_names[1:9],1,9))), "OBD_1_den.pdf")
+# Plots.savefig((@df ob StatsPlots.density(cols(17:25), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(ob_feats_names[10:18],1,9))), "OBD_2_den.pdf")
+# Plots.savefig((@df ob StatsPlots.density(cols(26:34), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(ob_feats_names[19:27],1,9))), "OBD_3_den.pdf")
+# Plots.savefig((@df ob StatsPlots.density(cols(35:39), legend=false, titlefont=font(8), xticks=[1,2,3], layout=5, label="", title=reshape(ob_feats_names[28:32],1,5))), "OBD_4_den.pdf")
