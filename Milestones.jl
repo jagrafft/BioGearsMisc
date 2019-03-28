@@ -1,6 +1,6 @@
 using CSV, DataFrames, JuliaDB, HypothesisTests, OnlineStats, Plots, StatsBase, StatsPlots, GR; gr(dpi=400)
 
-gi = loadtable("data/Milestones/2017-2018/GIBleed-num.csv");
+gi = loadtable("data/Milestones/2017-2018/GIB-num.csv");
 ob = loadtable("data/Milestones/2017-2018/OBD-num.csv");
 
 sample_size = 375
@@ -27,11 +27,22 @@ ob_cov = ((reduce((a,c) -> (push!(a[1], round.([v for v in map(x -> OnlineStats.
 common_feat_cov = [x for x in reduce((a,c) -> (push!(a[1], (i=a[2], N=sample_size, feature=c, cov=([gi, ob] .|> x -> select(x, c) |> x -> StatsBase.sample(x, sample_size, replace=false)) |> x -> round(OnlineStats.cov(x[1], x[2]), digits=2))); a[2] = a[2] + 1; a), intersect(colnames(gi), colnames(ob))[8:34], init=[[], 1])[1]] |> table
 
 ## Unequal variance t-test
-gi_uvt = ((reduce((a,c) -> (push!(a[1], round.([v for v in map(x -> UnequalVarianceTTest(select(gi, c), select(gi, x)) |> pvalue, a[2])], digits=2)); a[2] = a[2][2:end]; a), colnames(gi)[8:38], init=[[], colnames(gi)[8:38]])[1] .|> x -> vcat([Missing for z in 1:1:(31-length(x))], x)) |> m -> zip(colnames(gi)[8:38], m) .|> x -> NamedTuple{tuple(:features, colnames(gi)[8:38]...)}(tuple([x[1], x[2]...]...))) |> table
+gi_uvt = ((reduce((a,c) -> (push!(a[1], round.([v for v in map(x -> HypothesisTests.UnequalVarianceTTest(select(gi, c), select(gi, x)) |> pvalue, a[2])], digits=2)); a[2] = a[2][2:end]; a), colnames(gi)[8:38], init=[[], colnames(gi)[8:38]])[1] .|> x -> vcat([Missing for z in 1:1:(31-length(x))], x)) |> m -> zip(colnames(gi)[8:38], m) .|> x -> NamedTuple{tuple(:features, colnames(gi)[8:38]...)}(tuple([x[1], x[2]...]...))) |> table
 
-ob_uvt = ((reduce((a,c) -> (push!(a[1], round.([v for v in map(x -> UnequalVarianceTTest(select(ob, c), select(ob, x)) |> pvalue, a[2])], digits=2)); a[2] = a[2][2:end]; a), colnames(ob)[8:39], init=[[], colnames(ob)[8:39]])[1] .|> x -> vcat([Missing for z in 1:1:(32-length(x))], x)) |> m -> zip(colnames(ob)[8:39], m) .|> x -> NamedTuple{tuple(:features, colnames(ob)[8:39]...)}(tuple([x[1], x[2]...]...))) |> table
+ob_uvt = ((reduce((a,c) -> (push!(a[1], round.([v for v in map(x -> HypothesisTests.UnequalVarianceTTest(select(ob, c), select(ob, x)) |> pvalue, a[2])], digits=2)); a[2] = a[2][2:end]; a), colnames(ob)[8:39], init=[[], colnames(ob)[8:39]])[1] .|> x -> vcat([Missing for z in 1:1:(32-length(x))], x)) |> m -> zip(colnames(ob)[8:39], m) .|> x -> NamedTuple{tuple(:features, colnames(ob)[8:39]...)}(tuple([x[1], x[2]...]...))) |> table
 
-feat_uvt = [x for x in reduce((a,c) -> (push!(a[1], (i=a[2], feature=c, pvalue=(([gi, ob] .|> x -> select(x, c)) |> x -> round(UnequalVarianceTTest(x[1], x[2]) |> pvalue, digits=2)))); a[2] = a[2] + 1; a), intersect(colnames(gi), colnames(ob))[8:34], init=[[], 1])[1]] |> table
+feat_uvt = [x for x in reduce((a,c) -> (push!(a[1], (i=a[2], feature=c, pvalue=(([gi, ob] .|> x -> select(x, c)) |> x -> round(HypothesisTests.UnequalVarianceTTest(x[1], x[2]) |> pvalue, digits=2)))); a[2] = a[2] + 1; a), intersect(colnames(gi), colnames(ob))[8:34], init=[[], 1])[1]] |> table
+
+gi_uvt_per_feat_nonunique = (reduce((a,c) -> (map(x -> push!(a[1], [c, x, HypothesisTests.UnequalVarianceTTest(select(gi, c), select(gi, x)) |> pvalue |> p -> round(p, digits=2)]), a[2][2:end]); a), colnames(gi)[8:38], init=[[], colnames(gi)[8:38]])[1] .|> z -> NamedTuple{tuple(:x, :y, :pval)}(tuple(z...))) |> table |> t -> filter(x -> x.pval > 0.39 && x.x != x.y, sort(t, :pval, rev=true))
+
+ob_uvt_per_feat_nonunique = (reduce((a,c) -> (map(x -> push!(a[1], [c, x, HypothesisTests.UnequalVarianceTTest(select(ob, c), select(ob, x)) |> pvalue |> p -> round(p, digits=2)]), a[2][2:end]); a), colnames(ob)[8:39], init=[[], colnames(ob)[8:39]])[1] .|> z -> NamedTuple{tuple(:x, :y, :pval)}(tuple(z...))) |> table |> t -> filter(x -> x.pval > 0.39 && x.x != x.y, sort(t, :pval, rev=true))
+
+### Filter duplicates (too agressive, see and use CSVs)
+# ((reduce((a,c) -> (a[2] = a[2][2:end]; foreach(v -> push!(a[1], (v.x == c.y || v.y == c.x) && v.pval == c.pval ? c : Missing), a[2]); a), gi_uvt_per_feat_nonunique |> rows, init=[[], gi_uvt_per_feat_nonunique |> rows])[1] |> unique |> x -> vcat(x[1], x[3:end])) .|> z -> NamedTuple{tuple(:x, :y, :pval)}(values(z))) |> table
+# ((reduce((a,c) -> (a[2] = a[2][2:end]; foreach(v -> push!(a[1], (v.x == c.y || v.y == c.x) && v.pval == c.pval ? c : Missing), a[2]); a), ob_uvt_per_feat_nonunique |> rows, init=[[], ob_uvt_per_feat_nonunique |> rows])[1] |> unique)[2:end] .|> z -> NamedTuple{tuple(:x, :y, :pval)}(values(z))) |> table
+
+gi_uvt_per_feat = loadtable("data/Milestones/2017-2018/NO_DELETE_UneqVarTTest_GIB-p_gt_0.4.csv");
+ob_uvt_per_feat = loadtable("data/Milestones/2017-2018/NO_DELETE_UneqVarTTest_OBD-p_gt_0.4.csv");
 
 ## Theta
 gi_bool_feats = map(x -> maximum(x[1]) < 3 ? x[2] : missing, columns(select(gi, Between(8,38))) |> x -> zip(values(x), keys(x))) |> skipmissing |> collect
@@ -42,18 +53,18 @@ ob_th = map(x -> (l=length(x[1]); c=count(i -> i == 1, x[1]); NamedTuple{(:featu
 
 ## Write CSV
 [
-    ("DescriptiveStats_GIBleed.csv", gi_summary),
+    ("DescriptiveStats_GIB.csv", gi_summary),
     ("DescriptiveStats_OBD.csv", ob_summary),
-    ("Pearsons-r_GIBleed.csv", gi_pearsons),
+    ("Pearsons-r_GIB.csv", gi_pearsons),
     ("Pearsons-r_OBD.csv", ob_pearsons),
     ("Pearsons-r_by_common_feature.csv", common_feat_pearsons),
-    ("Covariance_GIBleed.csv", gi_cov),
+    ("Covariance_GIB.csv", gi_cov),
     ("Covariance_OBD.csv", ob_cov),
     ("Covariance_by_common_feature.csv", common_feat_cov),
-    ("UneqVarTTest_GIBleed.csv", gi_uvt),
+    ("UneqVarTTest_GIB.csv", gi_uvt),
     ("UneqVarTTest_OBD.csv", ob_uvt),
     ("UneqVarTTest_by_common_feature.csv", feat_uvt),
-    ("Theta_GIBleed.csv", gi_th),
+    ("Theta_GIB.csv", gi_th),
     ("Theta_OBD.csv", ob_th)
 ] .|> x -> CSV.write(x...)
 
@@ -76,7 +87,7 @@ Plots.savefig(Plots.heatmap((convert(Matrix, select(ob_uvt, Between(2,33)) |> Da
 
 ## Histograms
 ### Durations
-map(x -> filter(v -> v < x, select(gi, :minutes)), [8301, 1250, 201, 151, 101, 61, 46, 31]) .|> x -> Plots.savefig(Plots.histogram(x, legend=false, bins=:scott, title="GI Bleed, duration < $(maximum(x))min (N=$(length(x)))"), "GIBleed_lt$(maximum(x)).pdf");
+map(x -> filter(v -> v < x, select(gi, :minutes)), [8301, 1250, 201, 151, 101, 61, 46, 31]) .|> x -> Plots.savefig(Plots.histogram(x, legend=false, bins=:scott, title="GI Bleed, duration < $(maximum(x))min (N=$(length(x)))"), "GIB_lt$(maximum(x)).pdf");
 
 map(x -> filter(v -> v < x, select(ob, :minutes)), [8301, 1250, 201, 151, 101, 61, 46, 31]) .|> x -> Plots.savefig(Plots.histogram(x, legend=false, bins=:scott, title="Obstructed Bile Duct, duration < $(maximum(x))min (N=$(length(x)))"), "OBD_lt$(maximum(x)).pdf");
 
