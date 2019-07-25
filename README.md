@@ -1,3 +1,3 @@
-# Julia -> psychomotor data -> ...
+# Miscellaneous Julia Scripts
 
-Repository for the Julia code I use to preprocess, generate, process, plot, et cetera psychomotor data. May eventually split into an independent project (or two).
+Repository for the Julia code I use, sometimes.

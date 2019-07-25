@@ -128,3 +128,11 @@ Plots.savefig((@df ob StatsPlots.scatter(cols(35:39), legend=false, titlefont=fo
 # Plots.savefig((@df ob StatsPlots.density(cols(17:25), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(ob_feats_names[10:18],1,9))), "OBD_2_den.pdf");
 # Plots.savefig((@df ob StatsPlots.density(cols(26:34), legend=false, titlefont=font(8), xticks=[1,2,3], layout=9, label="", title=reshape(ob_feats_names[19:27],1,9))), "OBD_3_den.pdf");
 # Plots.savefig((@df ob StatsPlots.density(cols(35:39), legend=false, titlefont=font(8), xticks=[1,2,3], layout=5, label="", title=reshape(ob_feats_names[28:32],1,5))), "OBD_4_den.pdf");
+
+# Naive Bayes using Common Features
+common = tuple(intersect(colnames(gi), colnames(ob))[8:34]..., :label)
+gil = insertcol(popcol(gi, :sc0_score), 39, :label, repeat([:GIB], length(gi)))
+obl = insertcol(popcol(ob, :sc0_score), 40, :label, repeat([:OBD], length(ob)))
+
+Xt = merge(select(gil, common)[1:150], select(obl, common)[1:150])
+X = merge(select(gil, common)[151:end], select(obl, common)[151:end])
