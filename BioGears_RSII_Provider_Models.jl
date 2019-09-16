@@ -14,8 +14,8 @@ s(d, n, rng; title="", xlab="", ylab="") = (StatsPlots.scatter(rand(d, n), color
 # Data
 dists = [
     (d = [180,80], l = "Duration of Preoxygenation", xlab="seconds", ylab="n", rng=[0,180]),
-    (d = [180,28], l = "Fentanyl Administration to Laryngoscopy", xlab="seconds", ylab="n", rng=[180,300]),
-    (d = [30,3.6], l = "Succinylcholine Administration to Laryngsocopy", xlab="seconds", ylab="n", rng=[30,45])
+    (d = [180,27], l = "Fentanyl Administration to Laryngoscopy", xlab="seconds", ylab="n", rng=[180,300]),
+    (d = [30,3.3], l = "Succinylcholine Administration to Laryngsocopy", xlab="seconds", ylab="n", rng=[30,45])
 ] .|> t -> (d = Truncated(Normal(t.d[1], t.d[2]), t.d[1], t.d[1]+t.d[2]*5), l = t.l, rng = t.rng, xlab = t.xlab, ylab = t.ylab);
 
 # Draw Functions
