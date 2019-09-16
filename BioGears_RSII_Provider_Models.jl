@@ -30,3 +30,9 @@ zip(
     dists .|> t -> (t.rng[1] == 0 ? p(t.d, samples.line; xlab=t.xlab) : p(t.d, samples.line, t.rng[2]; xlab=t.xlab)),
     dists .|> t -> (t.rng[1] == 0 ? s(t.d, samples.scat, [t.rng[2]]; xlab=t.ylab, ylab=t.xlab) : s(t.d, samples.scat, t.rng; xlab=t.ylab, ylab=t.xlab))
 ) |> collect |> z -> zip(z, dists .|> t -> (l=t.l, d=latexstring("\\mathcal{N}(", "$(t.d.untruncated.μ),$(t.d.untruncated.σ))"))) |> collect .|> t -> png(Plots.plot(t[1]..., title=t[2].d), t[2].l);
+
+### 10 2x1 {Line Scatter}
+1:1:10 .|> it -> zip(
+    dists .|> t -> (t.rng[1] == 0 ? p(t.d, samples.line; xlab=t.xlab) : p(t.d, samples.line, t.rng[2]; xlab=t.xlab)),
+    dists .|> t -> (t.rng[1] == 0 ? s(t.d, samples.scat, [t.rng[2]]; xlab=t.ylab, ylab=t.xlab) : s(t.d, samples.scat, t.rng; xlab=t.ylab, ylab=t.xlab))
+) |> collect |> z -> zip(z, dists .|> t -> (l=t.l, d=latexstring("\\mathcal{N}(", "$(t.d.untruncated.μ),$(t.d.untruncated.σ))"))) |> collect .|> t -> png(Plots.plot(t[1]..., title=t[2].d), "$(t[2].l)-$(it)");
