@@ -1,69 +1,54 @@
 using Distributions
-
 # Punch list
 # - [ ] Integrate Rocuronium
 # - [ ] Integrate Propofol
 
 # patient is 80kg
 # :mass_range (first array) is dose*80kg
-drugs = Dict{Symbol,NamedTuple{(:mass_range, :alt_mass_range, :concentration, :con_units),T} where T<:Tuple}(
-    :fentanyl => (mass_range=160:1:1600, alt_mass_range=missing, concentration=50., con_units="ug/mL"),
-    # rocuronium => (mass_range=[2.,5.6], alt_mass_range=missing, concentration=10., con_units="mg/mL"),
-    :succs => (mass_range=80:0.1:120, alt_mass_range=[1.9,2.1], concentration=20., con_units="mg/mL"),
-    # propofol => (mass_range=[1.5,2.5], alt_mass_range=missing, concentration=10., con_units="mg/mL")
-)
+drugs = [
+    (label = :fentanyl, mass_range=160:1:1600, alt_mass_range=missing, concentration=50., unit="ug"),
+    (label = :propofol, mass_range=1.5:0.1:2.5, alt_mass_range=missing, concentration=10., unit="mg"),
+    (label = :rocuronium, mass_range=2.0:0.1:5.6, alt_mass_range=missing, concentration=10., unit="mg"),
+    (label = :succinycholine, mass_range=80:0.1:120, alt_mass_range=[1.9,2.1], concentration=20., unit="mg")
+]
+
+durations = [ 
+    (action = :preox_offset, d = Truncated(Normal(18, 4.25), 18, 18+4.25*4), lim=[18, missing]),
+    (action = :fentanyl, d = Uniform(180, 300), lim=[180, 300]),
+    (action = :succinycholine, d = Uniform(30, 45), lim=[30, 45]),
+    (action = :laryngoscopy, d = Beta(2.5, 2), lim=[8, 32]),
+    (action = :mech_vent, d = Uniform(4, 12), lim=[4, 12])
+]
 
 drugVolume(mass::Float64, concentration::Float64) = mass/concentration |> x -> round(x, digits=2)
 
-function simulate()
-    durations = Dict{Symbol,NamedTuple{(:d, :lim),T} where T<:Tuple}(
-        :preox => (d = Truncated(Normal(180, 100), 180, 180+100*4), lim=[180, missing]),
-        :laryngoscopy => (d = Beta(2.5, 2), lim=[8,32]),
-        :fentanyl => (d = Uniform(180, 300), lim=[180, 300]),
-        :succs => (d = Uniform(30, 45), lim=[30, 45]),
-        :mech_vent => (d = Beta(2.5, 2), lim=[4, 12]),
-        :apnea_offset => (d = Truncated(Normal(3, 0.2), 2.4, 3.8), lim=[2.4, 3.8])
-    )
+function simulate(drugs, durations)
+    ([
+        map(x -> rand(x.mass_range, 1) |> first |> v -> (label=x.label, dose=v, unit=x.unit), drugs),
+        map(x -> (rand(x.d, 1) |> first |> v -> (action=x.action, duration=(Beta{Float64} == (x.d |> typeof) ? (v*x.lim[1]) + x.lim[1] : v))), durations) |> X -> push!(X, (action=:tail, duration=90.))
+    ] .|> table) |> X -> (drug_doses=X[1], sequence=X[2])
+end
 
-    # fentanyl dose
-    df = rand(drugs[:fentanyl].mass_range, 1) |> first
 
-    # succs dose
-    ds = rand(drugs[:succs].mass_range, 1) |> first
+function test(sim)
+    # println("## Drugs ##")
+    # foreach(X -> println("$(X[1]) [$(X[2][1]), $(X[2][2])]"),
+    #     [
+    #         ["fentanyl []", filter(x -> x.label == :fentanyl, sim.drug_doses)[1].dose |> v -> [v, "CHECK"]],
+    #         # ["rocuronium []", filter(x -> x.label == :rocuronium)[1].dose |> v -> [v, v >= 0.025]],
+    #         ["succinycholine []", filter(x -> x.label == :succinycholine, sim.drug_doses)[1].dose |> v -> [v, "CHECK"]]
+    #     ]
+    # )
 
-    # preox duration
-    pd = rand(durations[:preox].d, 1) |> first
-
-    # laryngoscopy duration
-    ld = rand(durations[:laryngoscopy].d, 1) |> first |> x -> x * (durations[:laryngoscopy].lim[2] - durations[:laryngoscopy].lim[1])+ durations[:laryngoscopy].lim[1]
-
-    # fentanyl duration
-    fd = rand(durations[:fentanyl].d, 1) |> first
-
-    # succs duration
-    sd = rand(durations[:succs].d, 1) |> first
-
-    # attach mech_vent duration
-    mvd = rand(durations[:mech_vent].d, 1) |> first |> x -> x * (durations[:mech_vent].lim[2] - durations[:mech_vent].lim[1])+ durations[:mech_vent].lim[1]
-
-    # apnea offset 
-    oa = rand(durations[:apnea_offset].d, 1) |> first    
-
-    # time to laryngoscopy =  preoxygenation dur + (succs dur - apnea offset) |> x -> x > fentanyl dur ? x : (fentanyl dur - x)*2 + x
-    ttl = pd + (sd - oa) |> x -> x > fd ? x : x + (fd - x)*2 
-
-    # time of preoxygenation start = time to laryngoscopy - preoxygenation dur
-    ap = ttl - pd
-
-    # time of fentanyl admin = time to laryngoscopy - fentanyl dur
-    af = ttl - fd
-    
-    # time of succs admin = time to laryngoscopy - succs dur
-    as = ttl - sd    
-
-    # time to mechanical vent = time to laryngoscopy + laryngoscopy duration + attach mech_vent duration
-    ttmv = ttl + ld + mvd
-
-    # return sorted (implicitly) by length? I believe they should...
-    (total=ttmv, time_to_lar=ttl, time_fent_admin=af, dose_fent="$(df)ug", dur_fent=fd, time_succs_admin=as, dose_succs="$(ds)mg", dur_succs=sd, dur_apnea_offset=-oa, dur_lar=ld, dur_mv_wait=mvd, time_tail=90.0)
+    println("## Durations ##")
+    foreach(X -> println("$(X[1])$(ismissing(X[2][2]) ? "" : " seconds")? => ($(round(X[2][1], digits=2)), $(X[2][2] == 1.0))"),
+        [
+            ["preoxygenation [180, ∞]", filter(x -> x.action in (:preox_offset, :fentanyl), sim.sequence) |> t -> select(t, :duration) |> sum |> v -> [v, v >= 180.]],
+            ["fentanyl [180,300]", filter(x -> x.action == :fentanyl, sim.sequence)[1].duration |> v -> [v, v >= 180 && v <= 300]],
+            ["succinycholine [30,45]", filter(x -> x.action == :succinycholine, sim.sequence)[1].duration |> v -> [v, v >= 30 && v <= 45]],
+            ["tail [90]", [90, true]],
+            ["\nduration of laryngoscopy", filter(x -> x.action == :laryngoscopy, sim.sequence)[1].duration |> v -> [v, missing]],
+            ["time to mechanical ventilation", filter(x -> x.action == :mech_vent, sim.sequence)[1].duration |> v -> [v, missing]]
+        ]
+    ) 
 end
