@@ -23,10 +23,10 @@ durations = [
 drugVolume(mass::Float64, concentration::Float64) = mass/concentration |> x -> round(x, digits=2)
 
 function simulate(drugs, durations)
-    ([
+    [
         map(x -> rand(x.mass_range, 1) |> first |> v -> (label=x.label, dose=v, unit=x.unit), drugs),
         map(x -> (rand(x.d, 1) |> first |> v -> (action=x.action, duration=(Beta{Float64} == (x.d |> typeof) ? (v*x.lim[1]) + x.lim[1] : v))), durations) |> X -> push!(X, (action=:tail, duration=90.))
-    ] .|> table) |> X -> (drug_doses=X[1], sequence=X[2])
+    ] |> X -> (drug_doses=X[1], sequence=X[2])
 end
 
 
@@ -40,15 +40,15 @@ function test(sim)
     #     ]
     # )
 
-    println("## Durations ##")
-    foreach(X -> println("$(X[1])$(ismissing(X[2][2]) ? "" : " seconds")? => ($(round(X[2][1], digits=2)), $(X[2][2] == 1.0))"),
+    # println("## Durations ##")
+    map(X -> ("$(X[1])$(ismissing(X[2][2]) ? "" : " seconds")? => ($(round(X[2][1], digits=2)), $(X[2][2] == 1.0))"),
         [
             ["preoxygenation [180, ∞]", filter(x -> x.action in (:preox_offset, :fentanyl), sim.sequence) |> t -> select(t, :duration) |> sum |> v -> [v, v >= 180.]],
             ["fentanyl [180,300]", filter(x -> x.action == :fentanyl, sim.sequence)[1].duration |> v -> [v, v >= 180 && v <= 300]],
             ["succinycholine [30,45]", filter(x -> x.action == :succinycholine, sim.sequence)[1].duration |> v -> [v, v >= 30 && v <= 45]],
             ["tail [90]", [90, true]],
-            ["\nduration of laryngoscopy", filter(x -> x.action == :laryngoscopy, sim.sequence)[1].duration |> v -> [v, missing]],
+            ["duration of laryngoscopy", filter(x -> x.action == :laryngoscopy, sim.sequence)[1].duration |> v -> [v, missing]],
             ["time to mechanical ventilation", filter(x -> x.action == :mech_vent, sim.sequence)[1].duration |> v -> [v, missing]]
         ]
-    ) 
+    ) |> X -> join(X, "\n")
 end
