@@ -13,11 +13,12 @@ drugs = [
 ]
 
 durations = [ 
-    (action = :preox_offset, d = Truncated(Normal(18, 4.25), 18, 18+4.25*4), lim=[18, missing]),
+    (action = :preparation, d = Uniform(22, 63), lim=[22, 63]),
     (action = :fentanyl, d = Uniform(180, 300), lim=[180, 300]),
+    (action = :time_to_apnea, d = Uniform(1, 2.5), lim=[1, 2.5]),
     (action = :succinycholine, d = Uniform(30, 45), lim=[30, 45]),
     (action = :laryngoscopy, d = Beta(2.5, 2), lim=[8, 32]),
-    (action = :mech_vent, d = Uniform(4, 12), lim=[4, 12])
+    (action = :time_to_mech_vent, d = Uniform(4, 12), lim=[4, 12])
 ]
 
 drugVolume(mass::Float64, concentration::Float64) = mass/concentration |> x -> round(x, digits=2)
@@ -43,7 +44,7 @@ function test(sim)
     # println("## Durations ##")
     map(X -> ("$(X[1])$(ismissing(X[2][2]) ? "" : " seconds")? => ($(round(X[2][1], digits=2)), $(X[2][2] == 1.0))"),
         [
-            ["preoxygenation [180, ∞]", filter(x -> x.action in (:preox_offset, :fentanyl), sim.sequence) |> t -> select(t, :duration) |> sum |> v -> [v, v >= 180.]],
+            ["preoxygenation [180, ∞]", filter(x -> x.action in (:fentanyl, :time_to_apnea), sim.sequence) |> t -> select(t, :duration) |> sum |> v -> [v, v >= 180.]],
             ["fentanyl [180,300]", filter(x -> x.action == :fentanyl, sim.sequence)[1].duration |> v -> [v, v >= 180 && v <= 300]],
             ["succinycholine [30,45]", filter(x -> x.action == :succinycholine, sim.sequence)[1].duration |> v -> [v, v >= 30 && v <= 45]],
             ["tail [90]", [90, true]],
